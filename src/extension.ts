@@ -1,6 +1,39 @@
 import * as vscode from 'vscode';
 
-export function activate(context: vscode.ExtensionContext) {
+async function activateHtmlAndJavaScript(context: vscode.ExtensionContext) {
+    try {
+        // Get the HTML extension
+        const htmlExtension = vscode.extensions.getExtension('vscode.html-language-features');
+        if (htmlExtension) {
+            if (!htmlExtension.isActive) {
+                await htmlExtension.activate();
+            }
+            
+            // If the extension provides an API for registration, use it
+            if (htmlExtension.exports && htmlExtension.exports.provideHtmlLanguageFeatures) {
+                const htmlFeatures = htmlExtension.exports.provideHtmlLanguageFeatures({
+                    documentSelector: [{ language: 'hotmeal' }]
+                });
+                if (htmlFeatures) {
+                    context.subscriptions.push(htmlFeatures);
+                }
+            }
+        }
+        
+        // Get the JavaScript/TypeScript extension
+        const jsExtension = vscode.extensions.getExtension('vscode.typescript-language-features');
+        if (jsExtension && !jsExtension.isActive) {
+            await jsExtension.activate();
+        }
+    } catch (error) {
+        console.error('Error activating HTML/JavaScript support:', error);
+    }
+}
+
+export async function activate(context: vscode.ExtensionContext) {
+    // Activate HTML and JavaScript support
+    await activateHtmlAndJavaScript(context);
+
     // Create diagnostics collection
     const diagnosticsCollection = vscode.languages.createDiagnosticCollection('hotmeal');
     context.subscriptions.push(diagnosticsCollection);
@@ -110,6 +143,20 @@ export function activate(context: vscode.ExtensionContext) {
             return [vscode.TextEdit.replace(fullRange, formatted)];
         }
     });
+
+    // Register HTML content provider
+    const htmlDocumentProvider = {
+        provideTextDocumentContent(uri: vscode.Uri): string {
+            // Find the document with the same path but different scheme
+            const originalUri = uri.with({ scheme: 'file' });
+            const document = vscode.workspace.textDocuments.find(doc => doc.uri.fsPath === originalUri.fsPath);
+            return document ? document.getText() : '';
+        }
+    };
+
+    context.subscriptions.push(
+        vscode.workspace.registerTextDocumentContentProvider('hotmeal-html', htmlDocumentProvider)
+    );
 }
 
 function formatHotmeal(text: string): string {

@@ -6,6 +6,21 @@ function activate(context) {
     // Create diagnostics collection
     const diagnosticsCollection = vscode.languages.createDiagnosticCollection('hotmeal');
     context.subscriptions.push(diagnosticsCollection);
+    // Configure HTML language features
+    vscode.languages.setLanguageConfiguration('hotmeal', {
+        wordPattern: /(-?\d*\.\d\w*)|([^\`\~\!\@\#\%\^\&\*\(\)\=\+\[\{\]\}\\\|\;\:\'\"\,\.\<\>\/\?\s]+)/g,
+        onEnterRules: [
+            {
+                beforeText: /^\s*<(?!\/)[^>]*>$/,
+                afterText: /^<\/[^>]+>$/,
+                action: { indentAction: vscode.IndentAction.IndentOutdent }
+            },
+            {
+                beforeText: /^\s*<(?!\/)[^>]*>$/,
+                action: { indentAction: vscode.IndentAction.Indent }
+            }
+        ]
+    });
     // Register a command that formats Hotmeal document
     let disposable = vscode.commands.registerCommand('hotmeal.format', () => {
         const editor = vscode.window.activeTextEditor;

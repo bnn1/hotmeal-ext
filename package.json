@@ -21,7 +21,8 @@
         "extensions": [
           ".html"
         ],
-        "configuration": "./language-configuration.json"
+        "configuration": "./language-configuration.json",
+        "mimetypes": ["text/html"]
       }
     ],
     "grammars": [
@@ -32,6 +33,7 @@
         "embeddedLanguages": {
           "meta.tag.block.any.html": "html",
           "meta.embedded.block.html": "html",
+          "meta.embedded.inline.math": "hotmeal",
           "source.js": "javascript",
           "text.html.basic": "html"
         }
@@ -52,7 +54,9 @@
   },
   "main": "./out/extension.js",
   "activationEvents": [
-    "onLanguage:hotmeal"
+    "onLanguage:hotmeal",
+    "onWebviewPanel:hotmeal",
+    "onCommand:hotmeal.format"
   ],
   "scripts": {
     "vscode:prepublish": "npm run compile",
