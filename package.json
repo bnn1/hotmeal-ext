@@ -14,8 +14,13 @@
     "languages": [
       {
         "id": "hotmeal",
-        "aliases": ["Hotmeal", "hotmeal"],
-        "extensions": [".html"],
+        "aliases": [
+          "Hotmeal",
+          "hotmeal"
+        ],
+        "extensions": [
+          ".html"
+        ],
         "configuration": "./language-configuration.json"
       }
     ],
@@ -25,7 +30,10 @@
         "scopeName": "text.html.hotmeal",
         "path": "./syntaxes/hotmeal.tmLanguage.json",
         "embeddedLanguages": {
-          "text.html": "html"
+          "meta.tag.block.any.html": "html",
+          "meta.embedded.block.html": "html",
+          "source.js": "javascript",
+          "text.html.basic": "html"
         }
       }
     ],
