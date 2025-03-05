@@ -3,23 +3,6 @@
   "scopeName": "text.html.hotmeal",
   "patterns": [
     { "include": "#hotmeal-statements" },
-    {
-      "begin": "(<)(script)\\b(?=[^>]*(?:type=(['\"])text/javascript\\3|>))",
-      "beginCaptures": {
-        "1": { "name": "punctuation.definition.tag.html" },
-        "2": { "name": "entity.name.tag.script.html" }
-      },
-      "end": "(</)(script)(>)",
-      "endCaptures": {
-        "1": { "name": "punctuation.definition.tag.html" },
-        "2": { "name": "entity.name.tag.script.html" },
-        "3": { "name": "punctuation.definition.tag.html" }
-      },
-      "contentName": "source.js",
-      "patterns": [
-        { "include": "source.js" }
-      ]
-    },
     { "include": "text.html.basic" }
   ],
   "repository": {
@@ -27,7 +10,15 @@
       "patterns": [
         {
           "name": "meta.preprocessor.hotmeal",
-          "begin": "^\\s*(#)([a-zA-Z0-9-]+)",
+          "match": "^\\s*(#)([a-zA-Z0-9-]+)\\b",
+          "captures": {
+            "1": { "name": "punctuation.definition.directive.hotmeal" },
+            "2": { "name": "keyword.control.directive.hotmeal" }
+          }
+        },
+        {
+          "name": "meta.preprocessor.hotmeal",
+          "begin": "^\\s*(#)([a-zA-Z0-9-]+)\\s+",
           "beginCaptures": {
             "1": { "name": "punctuation.definition.directive.hotmeal" },
             "2": { "name": "keyword.control.directive.hotmeal" }

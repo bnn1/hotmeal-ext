@@ -2,7 +2,61 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deactivate = exports.activate = void 0;
 const vscode = require("vscode");
-function activate(context) {
+async function activateHtmlAndJavaScript(context) {
+    try {
+        // Get the HTML extension
+        const htmlExtension = vscode.extensions.getExtension('vscode.html-language-features');
+        if (htmlExtension) {
+            if (!htmlExtension.isActive) {
+                await htmlExtension.activate();
+            }
+            // Register providers that delegate to HTML providers
+            const documentSelector = [
+                { language: 'hotmeal', scheme: 'file' },
+                { language: 'hotmeal', scheme: 'untitled' }
+            ];
+            // Completion provider that delegates to HTML
+            const completionProvider = vscode.languages.registerCompletionItemProvider(documentSelector, {
+                async provideCompletionItems(document, position, token, context) {
+                    const line = document.lineAt(position.line);
+                    // If this is a Hotmeal directive line, don't provide HTML completions
+                    if (line.text.trimLeft().startsWith('#')) {
+                        return null;
+                    }
+                    // Otherwise delegate to HTML provider
+                    return vscode.commands.executeCommand('vscode.executeCompletionItemProvider', document.uri, position, context.triggerCharacter);
+                }
+            }, '<', '!', '/' // Trigger on these characters
+            );
+            // Hover provider that delegates to HTML
+            const hoverProvider = vscode.languages.registerHoverProvider(documentSelector, {
+                async provideHover(document, position, token) {
+                    const line = document.lineAt(position.line);
+                    // If this is a Hotmeal directive line, don't provide HTML hover
+                    if (line.text.trimLeft().startsWith('#')) {
+                        return null;
+                    }
+                    // Otherwise delegate to HTML hover provider
+                    return vscode.commands.executeCommand('vscode.executeHoverProvider', document.uri, position).then(hovers => hovers?.length ? hovers[0] : null);
+                }
+            });
+            context.subscriptions.push(completionProvider, hoverProvider);
+        }
+        // Same for JavaScript
+        const jsExtension = vscode.extensions.getExtension('vscode.typescript-language-features');
+        if (jsExtension) {
+            if (!jsExtension.isActive) {
+                await jsExtension.activate();
+            }
+        }
+    }
+    catch (error) {
+        console.error('Error activating HTML/JavaScript support:', error);
+    }
+}
+async function activate(context) {
+    // Activate HTML and JavaScript support
+    await activateHtmlAndJavaScript(context);
     // Create diagnostics collection
     const diagnosticsCollection = vscode.languages.createDiagnosticCollection('hotmeal');
     context.subscriptions.push(diagnosticsCollection);
@@ -51,6 +105,39 @@ function activate(context) {
         }
     });
     context.subscriptions.push(completionProvider);
+    // Register Hotmeal directive completion provider
+    const directiveCompletionProvider = vscode.languages.registerCompletionItemProvider('hotmeal', {
+        provideCompletionItems(document, position) {
+            const linePrefix = document.lineAt(position).text.slice(0, position.character);
+            // Only provide completions for lines starting with #
+            if (!linePrefix.trimLeft().startsWith('#')) {
+                return undefined;
+            }
+            // Create completions for Hotmeal directives
+            const directives = [
+                'define', 'define-long', 'append', 'append-long', 'end-define', 'end-append',
+                'procedure', 'endproc', 'call',
+                'if', 'elseif', 'else', 'endif', 'ifdef', 'ifndef',
+                'foreach', 'endfor', 'break',
+                'db-row-format', 'db-row-format-last', 'db-select', 'db-execute',
+                'md5-hash', 'curr-datetime', 'str-eval', 'str-replace', 'str-split',
+                'str-break', 'str-trim', 'str-mask', 'str-tolower', 'str-toupper',
+                'math', 'add', 'sub', 'mul', 'div',
+                'mkdir', 'read-file', 'write-file', 'append-file',
+                'parse-uri', 'parse-cookies', 'set-cookie', 'parse-form', 'get-body',
+                'include', 'include-once', 'redirect', 'forward', 'http-call',
+                'return', 'eof'
+            ];
+            return directives.map(directive => {
+                const item = new vscode.CompletionItem(directive, vscode.CompletionItemKind.Keyword);
+                item.detail = 'Hotmeal directive';
+                item.documentation = getHotmealStatementDocs(directive) || new vscode.MarkdownString(`#${directive}`);
+                return item;
+            });
+        }
+    }, '#' // Trigger on # character
+    );
+    context.subscriptions.push(directiveCompletionProvider);
     // Register hover provider
     const hoverProvider = vscode.languages.registerHoverProvider('hotmeal', {
         provideHover(document, position, token) {
@@ -78,6 +165,22 @@ function activate(context) {
             updateDiagnostics(event.document, diagnosticsCollection);
         }
     }));
+    // Register HTML auto-tag closing
+    context.subscriptions.push(vscode.languages.registerCompletionItemProvider('hotmeal', {
+        provideCompletionItems(document, position) {
+            const text = document.getText(new vscode.Range(new vscode.Position(position.line, 0), position));
+            // Check if we're typing an HTML tag
+            const tagMatch = text.match(/<(\w+)$/);
+            if (tagMatch) {
+                const tagName = tagMatch[1];
+                const item = new vscode.CompletionItem(tagName, vscode.CompletionItemKind.Snippet);
+                item.insertText = new vscode.SnippetString(`${tagName}>$1</${tagName}>`);
+                return [item];
+            }
+            return undefined;
+        }
+    }, '>' // Trigger completion when > is typed
+    ));
     // Register a formatter provider
     vscode.languages.registerDocumentFormattingEditProvider('hotmeal', {
         provideDocumentFormattingEdits(document) {
@@ -87,6 +190,16 @@ function activate(context) {
             return [vscode.TextEdit.replace(fullRange, formatted)];
         }
     });
+    // Register HTML content provider
+    const htmlDocumentProvider = {
+        provideTextDocumentContent(uri) {
+            // Find the document with the same path but different scheme
+            const originalUri = uri.with({ scheme: 'file' });
+            const document = vscode.workspace.textDocuments.find(doc => doc.uri.fsPath === originalUri.fsPath);
+            return document ? document.getText() : '';
+        }
+    };
+    context.subscriptions.push(vscode.workspace.registerTextDocumentContentProvider('hotmeal-html', htmlDocumentProvider));
 }
 exports.activate = activate;
 function formatHotmeal(text) {
@@ -172,9 +285,22 @@ function getHotmealStatementDocs(statement) {
     const docsMap = {
         'define': 'Defines a variable.\n\n```\n#define VarName VarValue\n```\n\nAssign VarName with string value from VarValue.',
         'define-long': 'Starts a multi-line variable definition.\n\n```\n#define-long VarName\n...\n#end-define\n```',
+        'append': 'Append to a variable.\n\n```\n#append VarName VarValue\n```',
+        'append-long': 'Starts a multi-line variable append.\n\n```\n#append-long VarName\n...\n#end-append\n```',
         'procedure': 'Defines a procedure.\n\n```\n#procedure ProcName(Param1, [out] Param2)\n...\n#endproc\n```',
+        'call': 'Call a procedure.\n\n```\n#call ProcName(Param1, Param2)\n```',
         'foreach': 'Loops through elements in a list.\n\n```\n#foreach VarName ListString\n...\n#endfor\n```',
-        'if': 'Conditional statement.\n\n```\n#if Condition\n...\n[#else]\n...\n#endif\n```'
+        'if': 'Conditional statement.\n\n```\n#if Condition\n...\n[#else]\n...\n#endif\n```',
+        'elseif': 'Else-if branch in conditional.\n\n```\n#elseif Condition\n```',
+        'else': 'Else branch in conditional.\n\n```\n#else\n```',
+        'ifdef': 'If variable defined.\n\n```\n#ifdef VarName\n...\n#endif\n```',
+        'ifndef': 'If variable not defined.\n\n```\n#ifndef VarName\n...\n#endif\n```',
+        'db-select': 'Execute SQL SELECT statement.\n\n```\n#db-select "SQL Statement"\n```',
+        'db-execute': 'Execute SQL statement (INSERT/UPDATE/DELETE).\n\n```\n#db-execute "SQL Statement"\n```',
+        'include': 'Include another file.\n\n```\n#include FilePath\n```',
+        'include-once': 'Include another file only if not already included.\n\n```\n#include-once FilePath\n```',
+        'return': 'Return from procedure or end response.\n\n```\n#return\n```',
+        'break': 'Break out of a foreach loop.\n\n```\n#break\n```'
     };
     return docsMap[statement] ? new vscode.MarkdownString(docsMap[statement]) : undefined;
 }

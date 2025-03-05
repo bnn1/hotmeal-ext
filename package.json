@@ -2,7 +2,7 @@
   "name": "hotmeal-language-support",
   "displayName": "Hotmeal Language Support",
   "description": "Syntax highlighting and formatting for Hotmeal programming language",
-  "version": "0.1.0",
+  "version": "0.1.4",
   "engines": {
     "vscode": "^1.60.0"
   },
@@ -19,7 +19,8 @@
           "hotmeal"
         ],
         "extensions": [
-          ".html"
+          ".html",
+          ".hml"
         ],
         "configuration": "./language-configuration.json",
         "mimetypes": ["text/html"]
@@ -31,11 +32,9 @@
         "scopeName": "text.html.hotmeal",
         "path": "./syntaxes/hotmeal.tmLanguage.json",
         "embeddedLanguages": {
-          "meta.tag.block.any.html": "html",
           "meta.embedded.block.html": "html",
-          "meta.embedded.inline.math": "hotmeal",
-          "source.js": "javascript",
-          "text.html.basic": "html"
+          "text.html.basic": "html",
+          "source.js": "javascript"
         }
       }
     ],
@@ -55,6 +54,7 @@
   "main": "./out/extension.js",
   "activationEvents": [
     "onLanguage:hotmeal",
+    "onLanguage:html",
     "onWebviewPanel:hotmeal",
     "onCommand:hotmeal.format"
   ],

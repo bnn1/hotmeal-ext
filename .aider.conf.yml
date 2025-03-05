@@ -59,8 +59,8 @@ model-metadata-file: ~/.config/aider/.aider.model.metadata.json
 ## Specify the model to use for editor tasks (default depends on --model)
 ## Copilot API
 # editor-model: openai/claude-3.7-sonnet-thought
-# editor-model: openai/claude-3.7-sonnet
-editor-model: openai/claude-3.5-sonnet
+editor-model: openai/claude-3.7-sonnet
+# editor-model: openai/claude-3.5-sonnet
 
 ## Only work with models that have meta-data available (default: True)
 show-model-warnings: false
