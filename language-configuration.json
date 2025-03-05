@@ -1,0 +1,33 @@
+{
+  "comments": {
+    "lineComment": "//"
+  },
+  "brackets": [
+    ["<", ">"],
+    ["(", ")"],
+    ["[", "]"],
+    ["{", "}"]
+  ],
+  "autoClosingPairs": [
+    { "open": "<", "close": ">" },
+    { "open": "(", "close": ")" },
+    { "open": "[", "close": "]" },
+    { "open": "{", "close": "}" },
+    { "open": "\"", "close": "\"" },
+    { "open": "'", "close": "'" }
+  ],
+  "surroundingPairs": [
+    ["<", ">"],
+    ["(", ")"],
+    ["[", "]"],
+    ["{", "}"],
+    ["\"", "\""],
+    ["'", "'"]
+  ],
+  "folding": {
+    "markers": {
+      "start": "^\\s*#(define-long|append-long|procedure|foreach|if|ifdef|ifndef)\\b",
+      "end": "^\\s*#(end-define|end-append|endproc|endfor|endif)\\b"
+    }
+  }
+}

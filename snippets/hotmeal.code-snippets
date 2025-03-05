@@ -1,0 +1,84 @@
+{
+  "Define Variable": {
+    "prefix": "define",
+    "body": [
+      "#define ${1:__variable_name__} \"${2:value}\""
+    ],
+    "description": "Define a Hotmeal variable"
+  },
+  "Define Long Variable": {
+    "prefix": "define-long",
+    "body": [
+      "#define-long ${1:__variable_name__}",
+      "${2:multi-line content}",
+      "#end-define"
+    ],
+    "description": "Define a multi-line Hotmeal variable"
+  },
+  "If Statement": {
+    "prefix": "if",
+    "body": [
+      "#if ${1:condition}",
+      "    ${2:content}",
+      "#endif"
+    ],
+    "description": "Hotmeal if statement"
+  },
+  "If-Else Statement": {
+    "prefix": "ifelse",
+    "body": [
+      "#if ${1:condition}",
+      "    ${2:content}",
+      "#else",
+      "    ${3:else_content}",
+      "#endif"
+    ],
+    "description": "Hotmeal if-else statement"
+  },
+  "Foreach Loop": {
+    "prefix": "foreach",
+    "body": [
+      "#foreach ${1:__variable__} ${2:__list__}",
+      "    ${3:content}",
+      "#endfor"
+    ],
+    "description": "Hotmeal foreach loop"
+  },
+  "Procedure": {
+    "prefix": "procedure",
+    "body": [
+      "#procedure ${1:ProcedureName}(${2:__param1__}${3:, __param2__})  ",
+      "    ${4:content}",
+      "#endproc"
+    ],
+    "description": "Hotmeal procedure definition"
+  },
+  "Call Procedure": {
+    "prefix": "call",
+    "body": [
+      "#call ${1:ProcedureName}(${2:\"param1\"}, ${3:\"param2\"})"
+    ],
+    "description": "Call a Hotmeal procedure"
+  },
+  "Database Select": {
+    "prefix": "db-select",
+    "body": [
+      "#db-row-format \"${1:<tr><td>__db_col_1__</td><td>__db_col_2__</td></tr>}\"",
+      "#db-select \"${2:SELECT column1, column2 FROM table WHERE condition}\"",
+      "#if __rc__ != 1",
+      "    ${3:__serr__}",
+      "#endif"
+    ],
+    "description": "Hotmeal database select statement"
+  },
+  "Database Execute": {
+    "prefix": "db-execute",
+    "body": [
+      "#db-execute \"${1:INSERT INTO table (column1, column2) VALUES ('value1', 'value2')}\"",
+      "#if __rc__ != 1",
+      "    ${2:__serr__}",
+      "#endif"
+    ],
+    "description": "Hotmeal database execute statement"
+  }
+}

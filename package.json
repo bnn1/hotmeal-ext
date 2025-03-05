@@ -1,0 +1,59 @@
+{
+  "name": "hotmeal-language-support",
+  "displayName": "Hotmeal Language Support",
+  "description": "Syntax highlighting and formatting for Hotmeal programming language",
+  "version": "0.1.0",
+  "engines": {
+    "vscode": "^1.60.0"
+  },
+  "publisher": "bnn1",
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "hotmeal",
+        "aliases": ["Hotmeal", "hotmeal"],
+        "extensions": [".html"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "hotmeal",
+        "scopeName": "text.html.hotmeal",
+        "path": "./syntaxes/hotmeal.tmLanguage.json",
+        "embeddedLanguages": {
+          "text.html": "html"
+        }
+      }
+    ],
+    "commands": [
+      {
+        "command": "hotmeal.format",
+        "title": "Format Hotmeal Document"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "hotmeal",
+        "path": "./snippets/hotmeal.code-snippets"
+      }
+    ]
+  },
+  "main": "./out/extension.js",
+  "activationEvents": [
+    "onLanguage:hotmeal"
+  ],
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/node": "^14.18.0",
+    "@types/vscode": "^1.60.0",
+    "typescript": "^4.5.5"
+  }
+}
