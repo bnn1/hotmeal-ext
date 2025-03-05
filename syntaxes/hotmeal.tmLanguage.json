@@ -10,9 +10,10 @@
       "patterns": [
         {
           "name": "meta.preprocessor.hotmeal",
-          "begin": "^\\s*(#)",
+          "begin": "^\\s*(#)([a-zA-Z0-9-]+)",
           "beginCaptures": {
-            "1": { "name": "punctuation.definition.directive.hotmeal" }
+            "1": { "name": "punctuation.definition.directive.hotmeal" },
+            "2": { "name": "keyword.control.directive.hotmeal" }
           },
           "end": "$",
           "patterns": [
@@ -25,7 +26,8 @@
             { "include": "#hotmeal-file-ops" },
             { "include": "#hotmeal-http-ops" },
             { "include": "#hotmeal-variables" },
-            { "include": "#hotmeal-strings" }
+            { "include": "#hotmeal-strings" },
+            { "include": "#hotmeal-operators" }
           ]
         },
         {
