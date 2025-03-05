@@ -1,8 +1,8 @@
 {
   "name": "hotmeal-language-support",
   "displayName": "Hotmeal Language Support",
-  "description": "Syntax highlighting and formatting for Hotmeal programming language",
-  "version": "0.1.4",
+  "description": "Syntax highlighting and formatting for Hotmeal programming language embedded in HTML",
+  "version": "0.2.0",
   "engines": {
     "vscode": "^1.60.0"
   },
@@ -11,30 +11,13 @@
     "Programming Languages"
   ],
   "contributes": {
-    "languages": [
-      {
-        "id": "hotmeal",
-        "aliases": [
-          "Hotmeal",
-          "hotmeal"
-        ],
-        "extensions": [
-          ".html",
-          ".hml"
-        ],
-        "configuration": "./language-configuration.json",
-        "mimetypes": ["text/html"]
-      }
-    ],
     "grammars": [
       {
-        "language": "hotmeal",
-        "scopeName": "text.html.hotmeal",
-        "path": "./syntaxes/hotmeal.tmLanguage.json",
+        "path": "./syntaxes/hotmeal-injection.json",
+        "scopeName": "text.html.hotmeal.injection",
+        "injectTo": ["text.html.derivative", "text.html.basic"],
         "embeddedLanguages": {
-          "meta.embedded.block.html": "html",
-          "text.html.basic": "html",
-          "source.js": "javascript"
+          "meta.embedded.block.hotmeal": "hotmeal"
         }
       }
     ],
@@ -46,16 +29,14 @@
     ],
     "snippets": [
       {
-        "language": "hotmeal",
+        "language": "html",
         "path": "./snippets/hotmeal.code-snippets"
       }
     ]
   },
   "main": "./out/extension.js",
   "activationEvents": [
-    "onLanguage:hotmeal",
     "onLanguage:html",
-    "onWebviewPanel:hotmeal",
     "onCommand:hotmeal.format"
   ],
   "scripts": {

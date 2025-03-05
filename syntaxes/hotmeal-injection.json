@@ -1,0 +1,166 @@
+{
+    "scopeName": "text.html.hotmeal.injection",
+    "injectionSelector": "L:text.html.basic",
+    "patterns": [
+      {
+        "include": "#hotmeal-statements"
+      },
+      {
+        "include": "#hotmeal-variables"
+      }
+    ],
+    "repository": {
+      "hotmeal-statements": {
+        "patterns": [
+          {
+            "name": "meta.preprocessor.hotmeal",
+            "begin": "^(\\s*)(?=#)",
+            "end": "$",
+            "patterns": [
+              {
+                "name": "meta.preprocessor.directive.hotmeal",
+                "match": "(#)([a-zA-Z0-9-]+)\\b",
+                "captures": {
+                  "1": { "name": "punctuation.definition.directive.hotmeal" },
+                  "2": { "name": "keyword.control.directive.hotmeal" }
+                }
+              },
+              {
+                "include": "#hotmeal-define"
+              },
+              {
+                "include": "#hotmeal-append"
+              },
+              {
+                "include": "#hotmeal-procedure"
+              },
+              {
+                "include": "#hotmeal-control-structures"
+              },
+              {
+                "include": "#hotmeal-db"
+              },
+              {
+                "include": "#hotmeal-string-ops"
+              },
+              {
+                "include": "#hotmeal-file-ops"
+              },
+              {
+                "include": "#hotmeal-http-ops"
+              },
+              {
+                "include": "#hotmeal-variables"
+              },
+              {
+                "include": "#hotmeal-strings"
+              }
+            ]
+          }
+        ]
+      },
+      "hotmeal-variables": {
+        "patterns": [
+          {
+            "name": "variable.other.substitution.hotmeal",
+            "match": "(_[a-zA-Z0-9_]+_)"
+          },
+          {
+            "name": "variable.other.substitution.special.hotmeal",
+            "match": "(##[a-zA-Z0-9_]+##|##'[a-zA-Z0-9_]+'##|##&[a-zA-Z0-9_]+&##|##%[a-zA-Z0-9_]+%##|##\\*[a-zA-Z0-9_]+\\*##|##,[a-zA-Z0-9_]+,##)"
+          }
+        ]
+      },
+      "hotmeal-define": {
+        "patterns": [
+          {
+            "name": "keyword.control.define.hotmeal",
+            "match": "\\b(define|define-long|append|append-long)\\b"
+          },
+          {
+            "name": "keyword.control.define.end.hotmeal",
+            "match": "\\b(end-define|end-append)\\b"
+          }
+        ]
+      },
+      "hotmeal-procedure": {
+        "patterns": [
+          {
+            "name": "keyword.control.procedure.hotmeal",
+            "match": "\\b(procedure|endproc|call)\\b"
+          },
+          {
+            "name": "storage.modifier.procedure.hotmeal",
+            "match": "\\b(out)\\b"
+          }
+        ]
+      },
+      "hotmeal-control-structures": {
+        "patterns": [
+          {
+            "name": "keyword.control.hotmeal",
+            "match": "\\b(if|elseif|else|endif|ifdef|ifndef|foreach|endfor|break|return|eof)\\b"
+          },
+          {
+            "name": "keyword.operator.logical.hotmeal",
+            "match": "\\b(is-defined|is-true|is-false|is-empty|is-integer|is-email|is-userid|is-file-name|file-exists|file-exists-abs|contains-any|contains-all|contains-only|contains-str|~i|~s|==|=<|left-eq|=>|right-eq|!=|>=|>|<=|<|range)\\b"
+          },
+          {
+            "name": "keyword.operator.logic-connectors.hotmeal",
+            "match": "(&&|\\|\\||!)"
+          }
+        ]
+      },
+      "hotmeal-db": {
+        "patterns": [
+          {
+            "name": "keyword.control.db.hotmeal",
+            "match": "\\b(db-row-format|db-row-format-last|db-select|db-select-rows|db-select-to-list|db-execute)\\b"
+          }
+        ]
+      },
+      "hotmeal-string-ops": {
+        "patterns": [
+          {
+            "name": "keyword.control.string-ops.hotmeal",
+            "match": "\\b(md5-hash|curr-datetime|ipaddr-geoinfo|str-eval|str-replace|str-split|str-break|str-trim|str-mask|str-tolower|str-toupper|str-encrypt|str-decrypt|str-rsa-sign|dml-encode|dml-decode)\\b"
+          },
+          {
+            "name": "keyword.operator.math.hotmeal",
+            "match": "\\b(add|sub|mul|div)\\b"
+          }
+        ]
+      },
+      "hotmeal-file-ops": {
+        "patterns": [
+          {
+            "name": "keyword.control.file-ops.hotmeal",
+            "match": "\\b(mkdir|read-file|write-file|append-file)\\b"
+          }
+        ]
+      },
+      "hotmeal-http-ops": {
+        "patterns": [
+          {
+            "name": "keyword.control.http-ops.hotmeal",
+            "match": "\\b(parse-uri|url-encode|parse-cookies|set-cookie|set-header|get-header|set-content-type|parse-form|get-body|eat-out|flush-out|replace-output|include|include-once|redirect|redirect-post|forward|http-call|http-call-inline|http-call-wait|http-calls-progress)\\b"
+          }
+        ]
+      },
+      "hotmeal-strings": {
+        "patterns": [
+          {
+            "name": "string.quoted.double.hotmeal",
+            "begin": "\"",
+            "end": "\"",
+            "patterns": [
+              {
+                "name": "constant.character.escape.hotmeal",
+                "match": "\\\\(n|t|\\\\|\"|[0-9]{3})"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }

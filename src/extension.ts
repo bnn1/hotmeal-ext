@@ -1,91 +1,10 @@
 import * as vscode from 'vscode';
 
-async function activateHtmlAndJavaScript(context: vscode.ExtensionContext) {
-    try {
-        // Get the HTML extension
-        const htmlExtension = vscode.extensions.getExtension('vscode.html-language-features');
-        if (htmlExtension) {
-            if (!htmlExtension.isActive) {
-                await htmlExtension.activate();
-            }
-            
-            // Register providers that delegate to HTML providers
-            const documentSelector = [
-                { language: 'hotmeal', scheme: 'file' },
-                { language: 'hotmeal', scheme: 'untitled' }
-            ];
-            
-            // Completion provider that delegates to HTML
-            const completionProvider = vscode.languages.registerCompletionItemProvider(
-                documentSelector,
-                {
-                    async provideCompletionItems(document, position, token, context) {
-                        const line = document.lineAt(position.line);
-                        
-                        // If this is a Hotmeal directive line, don't provide HTML completions
-                        if (line.text.trimLeft().startsWith('#')) {
-                            return null;
-                        }
-                        
-                        // Otherwise delegate to HTML provider
-                        return vscode.commands.executeCommand<vscode.CompletionList>(
-                            'vscode.executeCompletionItemProvider',
-                            document.uri,
-                            position,
-                            context.triggerCharacter
-                        );
-                    }
-                },
-                '<', '!', '/'  // Trigger on these characters
-            );
-            
-            // Hover provider that delegates to HTML
-            const hoverProvider = vscode.languages.registerHoverProvider(
-                documentSelector,
-                {
-                    async provideHover(document, position, token) {
-                        const line = document.lineAt(position.line);
-                        
-                        // If this is a Hotmeal directive line, don't provide HTML hover
-                        if (line.text.trimLeft().startsWith('#')) {
-                            return null;
-                        }
-                        
-                        // Otherwise delegate to HTML hover provider
-                        return vscode.commands.executeCommand<vscode.Hover[]>(
-                            'vscode.executeHoverProvider',
-                            document.uri,
-                            position
-                        ).then(hovers => hovers?.length ? hovers[0] : null);
-                    }
-                }
-            );
-            
-            context.subscriptions.push(completionProvider, hoverProvider);
-        }
-        
-        // Same for JavaScript
-        const jsExtension = vscode.extensions.getExtension('vscode.typescript-language-features');
-        if (jsExtension) {
-            if (!jsExtension.isActive) {
-                await jsExtension.activate();
-            }
-        }
-    } catch (error) {
-        console.error('Error activating HTML/JavaScript support:', error);
-    }
-}
-
 export async function activate(context: vscode.ExtensionContext) {
-    // Activate HTML and JavaScript support
-    await activateHtmlAndJavaScript(context);
+    console.log('Activating Hotmeal language support extension');
 
-    // Create diagnostics collection
-    const diagnosticsCollection = vscode.languages.createDiagnosticCollection('hotmeal');
-    context.subscriptions.push(diagnosticsCollection);
-
-    // Configure HTML language features
-    vscode.languages.setLanguageConfiguration('hotmeal', {
+    // Register a custom language configuration for HTML files to add Hotmeal features
+    const hotmealLanguageConfig = vscode.languages.setLanguageConfiguration('html', {
         wordPattern: /(-?\d*\.\d\w*)|([^\`\~\!\@\#\%\^\&\*\(\)\=\+\[\{\]\}\\\|\;\:\'\"\,\.\<\>\/\?\s]+)/g,
         onEnterRules: [
             {
@@ -96,54 +15,33 @@ export async function activate(context: vscode.ExtensionContext) {
             {
                 beforeText: /^\s*<(?!\/)[^>]*>$/,
                 action: { indentAction: vscode.IndentAction.Indent }
+            },
+            {
+                // Special rule for Hotmeal blocks
+                beforeText: /^\s*#(define-long|append-long|procedure|foreach|if|ifdef|ifndef)\b.*$/,
+                action: { indentAction: vscode.IndentAction.Indent }
             }
-        ]
+        ],
+        brackets: [
+            ["<!--", "-->"],
+            ["<", ">"],
+            ["{", "}"],
+            ["(", ")"]
+        ],
+        autoClosingPairs: [
+            { open: "{", close: "}" },
+            { open: "[", close: "]" },
+            { open: "(", close: ")" },
+            { open: "'", close: "'", notIn: [vscode.SyntaxTokenType.String, vscode.SyntaxTokenType.Comment] },
+            { open: "\"", close: "\"", notIn: [vscode.SyntaxTokenType.String] },
+            { open: "<!--", close: "-->", notIn: [vscode.SyntaxTokenType.String] }
+        ],
     });
+    context.subscriptions.push(hotmealLanguageConfig);
 
-    // Register a command that formats Hotmeal document
-    let disposable = vscode.commands.registerCommand('hotmeal.format', () => {
-        const editor = vscode.window.activeTextEditor;
-        if (!editor) {
-            return;
-        }
-
-        const document = editor.document;
-        if (document.languageId !== 'hotmeal') {
-            return;
-        }
-
-        editor.edit(editBuilder => {
-            const text = document.getText();
-            const formatted = formatHotmeal(text);
-            const fullRange = new vscode.Range(
-                document.positionAt(0),
-                document.positionAt(text.length)
-            );
-            editBuilder.replace(fullRange, formatted);
-        });
-    });
-
-    context.subscriptions.push(disposable);
-
-    // Register completion provider
-    const completionProvider = vscode.languages.registerCompletionItemProvider(
-        'hotmeal',
-        {
-            provideCompletionItems(document: vscode.TextDocument, position: vscode.Position) {
-                const variables = collectVariablesFromDocument(document);
-                return variables.map(varName => {
-                    const item = new vscode.CompletionItem(varName, vscode.CompletionItemKind.Variable);
-                    item.detail = 'Hotmeal Variable';
-                    return item;
-                });
-            }
-        }
-    );
-    context.subscriptions.push(completionProvider);
-
-    // Register Hotmeal directive completion provider
-    const directiveCompletionProvider = vscode.languages.registerCompletionItemProvider(
-        'hotmeal',
+    // Register completion provider for Hotmeal directives
+    const hotmealDirectiveProvider = vscode.languages.registerCompletionItemProvider(
+        'html',
         {
             provideCompletionItems(document: vscode.TextDocument, position: vscode.Position) {
                 const linePrefix = document.lineAt(position).text.slice(0, position.character);
@@ -179,11 +77,72 @@ export async function activate(context: vscode.ExtensionContext) {
         },
         '#' // Trigger on # character
     );
-    context.subscriptions.push(directiveCompletionProvider);
+    context.subscriptions.push(hotmealDirectiveProvider);
 
-    // Register hover provider
+    // Register completion provider for Hotmeal variables
+    const variableCompletionProvider = vscode.languages.registerCompletionItemProvider(
+        'html',
+        {
+            provideCompletionItems(document: vscode.TextDocument, position: vscode.Position) {
+                // For Hotmeal variables with special notation
+                const range = document.getWordRangeAtPosition(position, /(__[a-zA-Z0-9_]+__)/);
+                if (range) {
+                    const prefix = document.getText(range);
+                    if (prefix.startsWith('__')) {
+                        const variables = collectVariablesFromDocument(document);
+                        return variables
+                            .filter(v => v.startsWith(prefix))
+                            .map(varName => {
+                                const item = new vscode.CompletionItem(varName, vscode.CompletionItemKind.Variable);
+                                item.detail = 'Hotmeal Variable';
+                                item.range = range;
+                                return item;
+                            });
+                    }
+                }
+
+                // Offer variables in specific contexts
+                const lineText = document.lineAt(position.line).text;
+                const textBefore = lineText.substring(0, position.character);
+                
+                // Check if we're in a Hotmeal directive context
+                if (textBefore.trimLeft().startsWith('#')) {
+                    const variables = collectVariablesFromDocument(document);
+                    return variables.map(varName => {
+                        const item = new vscode.CompletionItem(varName, vscode.CompletionItemKind.Variable);
+                        item.detail = 'Hotmeal Variable';
+                        return item;
+                    });
+                }
+                
+                return undefined;
+            }
+        },
+        '_' // Trigger on _ character (for __variables__)
+    );
+    context.subscriptions.push(variableCompletionProvider);
+
+    // Create diagnostics collection for validation
+    const diagnosticsCollection = vscode.languages.createDiagnosticCollection('hotmeal');
+    context.subscriptions.push(diagnosticsCollection);
+
+    // Register diagnostic updates for HTML files to check Hotmeal syntax
+    context.subscriptions.push(
+        vscode.workspace.onDidChangeTextDocument(event => {
+            if (event.document.languageId === 'html') {
+                updateDiagnostics(event.document, diagnosticsCollection);
+            }
+        }),
+        vscode.workspace.onDidOpenTextDocument(document => {
+            if (document.languageId === 'html') {
+                updateDiagnostics(document, diagnosticsCollection);
+            }
+        })
+    );
+
+    // Register hover provider for Hotmeal directives and variables
     const hoverProvider = vscode.languages.registerHoverProvider(
-        'hotmeal',
+        'html',
         {
             provideHover(document, position, token) {
                 const range = document.getWordRangeAtPosition(position);
@@ -192,59 +151,52 @@ export async function activate(context: vscode.ExtensionContext) {
                 const word = document.getText(range);
                 const lineText = document.lineAt(position.line).text;
                 
+                // Provide hover for Hotmeal directives
                 if (lineText.trim().startsWith('#')) {
                     const statement = lineText.trim().split(/\s+/)[0].substring(1);
                     const documentation = getHotmealStatementDocs(statement);
                     if (documentation) {
-                        return new vscode.Hover(documentation);
+                        return new vscode.Hover(documentation, range);
                     }
                 }
                 
+                // Provide hover for Hotmeal variables
                 if (word.startsWith('__') && word.endsWith('__')) {
-                    return new vscode.Hover('Hotmeal Variable: ' + word);
+                    return new vscode.Hover('Hotmeal Variable: ' + word, range);
                 }
+
+                return null;
             }
         }
     );
     context.subscriptions.push(hoverProvider);
 
-    // Register diagnostic updates
-    context.subscriptions.push(
-        vscode.workspace.onDidChangeTextDocument(event => {
-            if (event.document.languageId === 'hotmeal') {
-                updateDiagnostics(event.document, diagnosticsCollection);
-            }
-        })
-    );
+    // Register a command that formats Hotmeal directives
+    const formatCommand = vscode.commands.registerCommand('hotmeal.format', () => {
+        const editor = vscode.window.activeTextEditor;
+        if (!editor) {
+            return;
+        }
 
-    // Register HTML auto-tag closing
-    context.subscriptions.push(
-        vscode.languages.registerCompletionItemProvider(
-            'hotmeal',
-            {
-                provideCompletionItems(document, position) {
-                    const text = document.getText(new vscode.Range(
-                        new vscode.Position(position.line, 0),
-                        position
-                    ));
-                    
-                    // Check if we're typing an HTML tag
-                    const tagMatch = text.match(/<(\w+)$/);
-                    if (tagMatch) {
-                        const tagName = tagMatch[1];
-                        const item = new vscode.CompletionItem(tagName, vscode.CompletionItemKind.Snippet);
-                        item.insertText = new vscode.SnippetString(`${tagName}>$1</${tagName}>`);
-                        return [item];
-                    }
-                    return undefined;
-                }
-            },
-            '>' // Trigger completion when > is typed
-        )
-    );
+        const document = editor.document;
+        if (document.languageId !== 'html') {
+            return;
+        }
 
-    // Register a formatter provider
-    vscode.languages.registerDocumentFormattingEditProvider('hotmeal', {
+        editor.edit(editBuilder => {
+            const text = document.getText();
+            const formatted = formatHotmeal(text);
+            const fullRange = new vscode.Range(
+                document.positionAt(0),
+                document.positionAt(text.length)
+            );
+            editBuilder.replace(fullRange, formatted);
+        });
+    });
+    context.subscriptions.push(formatCommand);
+
+    // Register document formatting provider
+    const formattingProvider = vscode.languages.registerDocumentFormattingEditProvider('html', {
         provideDocumentFormattingEdits(document: vscode.TextDocument): vscode.TextEdit[] {
             const text = document.getText();
             const formatted = formatHotmeal(text);
@@ -255,20 +207,7 @@ export async function activate(context: vscode.ExtensionContext) {
             return [vscode.TextEdit.replace(fullRange, formatted)];
         }
     });
-
-    // Register HTML content provider
-    const htmlDocumentProvider = {
-        provideTextDocumentContent(uri: vscode.Uri): string {
-            // Find the document with the same path but different scheme
-            const originalUri = uri.with({ scheme: 'file' });
-            const document = vscode.workspace.textDocuments.find(doc => doc.uri.fsPath === originalUri.fsPath);
-            return document ? document.getText() : '';
-        }
-    };
-
-    context.subscriptions.push(
-        vscode.workspace.registerTextDocumentContentProvider('hotmeal-html', htmlDocumentProvider)
-    );
+    context.subscriptions.push(formattingProvider);
 }
 
 function formatHotmeal(text: string): string {
@@ -281,7 +220,8 @@ function formatHotmeal(text: string): string {
     let currentIndent = '';
     
     // Process each line
-    for (let line of lines) {
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
         const trimmedLine = line.trim();
         
         // Check if this line is a Hotmeal statement
@@ -306,7 +246,7 @@ function formatHotmeal(text: string): string {
         }
         // HTML content
         else {
-            formattedLines.push(currentIndent + trimmedLine);
+            formattedLines.push(line); // Keep original indentation for HTML
         }
     }
     
@@ -355,9 +295,11 @@ function addPredefinedVariables(variables: Set<string>): void {
         '__client_browser__', '__client_browser_ver__', '__client_os__',
         '__client_os_ver__', '__client_size__', '__client_ip_addr__',
         '__client_lang__', '__client_auth_userid__', '__client_blocked__',
-        '__client_descr__', '__date_time__', '__time_now__', '__time_curr__',
+        '__client_descr__', '__base_uri__', '__rel_uri__', '__post_quest__',
+        '__date_time__', '__time_now__', '__time_curr__',
         '__time_minute__', '__time_hour__', '__date_day__', '__date_month__',
-        '__date_year__', '__date_dow__'
+        '__date_year__', '__date_dow__', '__rc__', '__serr__', '__rows__',
+        '__db_col_1__', '__db_col_2__', '__db_col_3__', '__db_rows__'
     ];
     predefined.forEach(v => variables.add(v));
 }
@@ -395,35 +337,37 @@ function updateDiagnostics(document: vscode.TextDocument, collection: vscode.Dia
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i].trim();
         
-        if (/#\s*(define-long|append-long|procedure|foreach|if|ifdef|ifndef)\b/.test(line)) {
-            const statement = line.split(/\s+/)[0].substring(1);
-            blockStack.push({statement, line: i});
-        }
-        else if (/#\s*(end-define|end-append|endproc|endfor|endif)\b/.test(line)) {
-            const statement = line.split(/\s+/)[0].substring(1);
-            const expectedClosing = getExpectedClosing(blockStack.pop()?.statement);
-            
-            if (!expectedClosing) {
-                const range = new vscode.Range(
-                    new vscode.Position(i, 0),
-                    new vscode.Position(i, line.length)
-                );
-                diagnostics.push(new vscode.Diagnostic(
-                    range,
-                    `Unexpected closing statement ${statement}`,
-                    vscode.DiagnosticSeverity.Error
-                ));
+        if (line.startsWith('#')) {
+            if (/#\s*(define-long|append-long|procedure|foreach|if|ifdef|ifndef)\b/.test(line)) {
+                const statement = line.split(/\s+/)[0].substring(1);
+                blockStack.push({statement, line: i});
             }
-            else if (statement !== expectedClosing) {
-                const range = new vscode.Range(
-                    new vscode.Position(i, 0),
-                    new vscode.Position(i, line.length)
-                );
-                diagnostics.push(new vscode.Diagnostic(
-                    range,
-                    `Expected ${expectedClosing} but found ${statement}`,
-                    vscode.DiagnosticSeverity.Error
-                ));
+            else if (/#\s*(end-define|end-append|endproc|endfor|endif)\b/.test(line)) {
+                const statement = line.split(/\s+/)[0].substring(1);
+                const expectedClosing = getExpectedClosing(blockStack.pop()?.statement);
+                
+                if (!expectedClosing) {
+                    const range = new vscode.Range(
+                        new vscode.Position(i, 0),
+                        new vscode.Position(i, line.length)
+                    );
+                    diagnostics.push(new vscode.Diagnostic(
+                        range,
+                        `Unexpected closing statement ${statement}`,
+                        vscode.DiagnosticSeverity.Error
+                    ));
+                }
+                else if (statement !== expectedClosing) {
+                    const range = new vscode.Range(
+                        new vscode.Position(i, 0),
+                        new vscode.Position(i, line.length)
+                    );
+                    diagnostics.push(new vscode.Diagnostic(
+                        range,
+                        `Expected ${expectedClosing} but found ${statement}`,
+                        vscode.DiagnosticSeverity.Error
+                    ));
+                }
             }
         }
     }
